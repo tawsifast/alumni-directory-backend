@@ -1,18 +1,21 @@
 import { Router } from "express";
 import { getAllAlumni, getAlumniById, createAlumni, updateAlumni, deleteAlumni, } from "../services/alumni.js";
 const router = Router();
-// Simple email regex for sensible input validation
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 function isPrismaError(error) {
     return typeof error === "object" && error !== null && "code" in error;
 }
-// GET /api/alumni - List alumni with optional search, filters, and pagination
+// GET / - List alumni with optional search, filters, sorting, and pagination
 router.get("/", async (req, res, next) => {
     try {
-        const { search, graduationYear, department, page, limit } = req.query;
+        const { search, graduationYear, department, page, limit, sort } = req.query;
         const parsedYear = graduationYear ? Number(graduationYear) : undefined;
         const parsedPage = page ? Number(page) : undefined;
         const parsedLimit = limit ? Number(limit) : undefined;
+        const validSorts = ["name-asc", "name-desc", "year-asc", "year-desc"];
+        const parsedSort = typeof sort === "string" && validSorts.includes(sort)
+            ? sort
+            : undefined;
         if (parsedYear !== undefined && (isNaN(parsedYear) || !Number.isInteger(parsedYear))) {
             return res.status(400).json({ success: false, message: "graduationYear must be a valid integer" });
         }
@@ -26,6 +29,7 @@ router.get("/", async (req, res, next) => {
             search: typeof search === "string" ? search.trim() : undefined,
             graduationYear: parsedYear,
             department: typeof department === "string" ? department.trim() : undefined,
+            sort: parsedSort,
             page: parsedPage,
             limit: parsedLimit,
         });
@@ -35,7 +39,7 @@ router.get("/", async (req, res, next) => {
         next(error);
     }
 });
-// GET /api/alumni/:id - Get a single alumnus by ID
+// GET /:id - Get a single alumnus by ID
 router.get("/:id", async (req, res, next) => {
     try {
         const { id } = req.params;
@@ -43,22 +47,16 @@ router.get("/:id", async (req, res, next) => {
             return res.status(400).json({ success: false, message: "Valid ID is required" });
         }
         const alumnus = await getAlumniById(id);
-        if (!alnumus(res, alumnus))
-            return;
+        if (!alumnus) {
+            return res.status(404).json({ success: false, message: "Alumni not found" });
+        }
         res.status(200).json({ success: true, data: alumnus });
     }
     catch (error) {
         next(error);
     }
 });
-function alnumus(res, alumnus) {
-    if (!alumnus) {
-        res.status(404).json({ success: false, message: "Alumni not found" });
-        return false;
-    }
-    return true;
-}
-// POST /api/alumni - Create a new alumnus
+// POST / - Create a new alumnus
 router.post("/", async (req, res, next) => {
     try {
         const { fullName, email, graduationYear, department, currentCompany, currentPosition, location } = req.body;
@@ -70,7 +68,10 @@ router.post("/", async (req, res, next) => {
         }
         const gradYearNum = Number(graduationYear);
         if (isNaN(gradYearNum) || !Number.isInteger(gradYearNum) || gradYearNum < 1900) {
-            return res.status(400).json({ success: false, message: "graduationYear must be a valid integer year (1900 or later)" });
+            return res.status(400).json({
+                success: false,
+                message: "graduationYear must be a valid integer year (1900 or later)",
+            });
         }
         if (!department || typeof department !== "string" || !department.trim()) {
             return res.status(400).json({ success: false, message: "department is required" });
@@ -94,7 +95,7 @@ router.post("/", async (req, res, next) => {
         next(error);
     }
 });
-// PATCH /api/alumni/:id - Update an existing alumnus
+// PATCH /:id - Update an existing alumnus
 router.patch("/:id", async (req, res, next) => {
     try {
         const { id } = req.params;
@@ -155,7 +156,7 @@ router.patch("/:id", async (req, res, next) => {
         next(error);
     }
 });
-// DELETE /api/alumni/:id - Delete an alumnus
+// DELETE /:id - Delete an alumnus
 router.delete("/:id", async (req, res, next) => {
     try {
         const { id } = req.params;
