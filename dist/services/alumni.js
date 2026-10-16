@@ -1,5 +1,6 @@
 import { Router } from "express";
 import prisma from "../lib/prisma.js";
+import { requireAdmin } from "../middleware/auth.js";
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 function isPrismaError(error) {
     return typeof error === "object" && error !== null && "code" in error;
@@ -68,6 +69,7 @@ export async function createAlumni(data) {
             currentCompany: data.currentCompany ?? null,
             currentPosition: data.currentPosition ?? null,
             location: data.location ?? null,
+            avatarUrl: data.avatarUrl ?? null,
         },
     });
 }
@@ -137,10 +139,10 @@ router.get("/:id", async (req, res, next) => {
         next(error);
     }
 });
-// POST / - Create a new alumnus
-router.post("/", async (req, res, next) => {
+// POST / - Create a new alumnus (ADMIN only)
+router.post("/", requireAdmin, async (req, res, next) => {
     try {
-        const { fullName, email, graduationYear, department, currentCompany, currentPosition, location } = req.body;
+        const { fullName, email, graduationYear, department, currentCompany, currentPosition, location, avatarUrl } = req.body;
         if (!fullName || typeof fullName !== "string" || !fullName.trim()) {
             return res.status(400).json({ success: false, message: "fullName is required" });
         }
@@ -165,6 +167,7 @@ router.post("/", async (req, res, next) => {
             currentCompany: typeof currentCompany === "string" ? currentCompany.trim() : null,
             currentPosition: typeof currentPosition === "string" ? currentPosition.trim() : null,
             location: typeof location === "string" ? location.trim() : null,
+            avatarUrl: typeof avatarUrl === "string" && avatarUrl.trim() ? avatarUrl.trim() : null,
         };
         const created = await createAlumni(payload);
         res.status(201).json({ success: true, data: created });
@@ -176,14 +179,14 @@ router.post("/", async (req, res, next) => {
         next(error);
     }
 });
-// PATCH /:id - Update an alumnus
-router.patch("/:id", async (req, res, next) => {
+// PATCH /:id - Update an alumnus (ADMIN only)
+router.patch("/:id", requireAdmin, async (req, res, next) => {
     try {
         const { id } = req.params;
         if (!id || typeof id !== "string") {
             return res.status(400).json({ success: false, message: "Valid ID is required" });
         }
-        const { fullName, email, graduationYear, department, currentCompany, currentPosition, location } = req.body;
+        const { fullName, email, graduationYear, department, currentCompany, currentPosition, location, avatarUrl } = req.body;
         const payload = {};
         if (fullName !== undefined) {
             if (typeof fullName !== "string" || !fullName.trim()) {
@@ -219,6 +222,9 @@ router.patch("/:id", async (req, res, next) => {
         if (location !== undefined) {
             payload.location = typeof location === "string" ? location.trim() : null;
         }
+        if (avatarUrl !== undefined) {
+            payload.avatarUrl = typeof avatarUrl === "string" && avatarUrl.trim() ? avatarUrl.trim() : null;
+        }
         if (Object.keys(payload).length === 0) {
             return res.status(400).json({ success: false, message: "At least one field must be provided for update" });
         }
@@ -237,8 +243,8 @@ router.patch("/:id", async (req, res, next) => {
         next(error);
     }
 });
-// DELETE /:id - Delete an alumnus
-router.delete("/:id", async (req, res, next) => {
+// DELETE /:id - Delete an alumnus (ADMIN only)
+router.delete("/:id", requireAdmin, async (req, res, next) => {
     try {
         const { id } = req.params;
         if (!id || typeof id !== "string") {

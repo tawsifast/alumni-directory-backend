@@ -1,5 +1,6 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
 import prisma from "../lib/prisma.js";
+import { requireAdmin } from "../middleware/auth.js";
 
 export interface CreateAlumniInput {
   fullName: string;
@@ -9,6 +10,7 @@ export interface CreateAlumniInput {
   currentCompany?: string | null;
   currentPosition?: string | null;
   location?: string | null;
+  avatarUrl?: string | null;
 }
 
 export type UpdateAlumniInput = Partial<CreateAlumniInput>;
@@ -34,6 +36,7 @@ export interface AlumniListResult {
     currentCompany: string | null;
     currentPosition: string | null;
     location: string | null;
+    avatarUrl: string | null;
     createdAt: Date;
     updatedAt: Date;
   }>;
@@ -119,6 +122,7 @@ export async function createAlumni(data: CreateAlumniInput) {
       currentCompany: data.currentCompany ?? null,
       currentPosition: data.currentPosition ?? null,
       location: data.location ?? null,
+      avatarUrl: data.avatarUrl ?? null,
     },
   });
 }
@@ -202,10 +206,11 @@ router.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
   }
 });
 
-// POST / - Create a new alumnus
-router.post("/", async (req: Request, res: Response, next: NextFunction) => {
+// POST / - Create a new alumnus (ADMIN only)
+router.post("/", requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { fullName, email, graduationYear, department, currentCompany, currentPosition, location } = req.body;
+    const { fullName, email, graduationYear, department, currentCompany, currentPosition, location, avatarUrl } =
+      req.body;
 
     if (!fullName || typeof fullName !== "string" || !fullName.trim()) {
       return res.status(400).json({ success: false, message: "fullName is required" });
@@ -235,6 +240,7 @@ router.post("/", async (req: Request, res: Response, next: NextFunction) => {
       currentCompany: typeof currentCompany === "string" ? currentCompany.trim() : null,
       currentPosition: typeof currentPosition === "string" ? currentPosition.trim() : null,
       location: typeof location === "string" ? location.trim() : null,
+      avatarUrl: typeof avatarUrl === "string" && avatarUrl.trim() ? avatarUrl.trim() : null,
     };
 
     const created = await createAlumni(payload);
@@ -247,15 +253,16 @@ router.post("/", async (req: Request, res: Response, next: NextFunction) => {
   }
 });
 
-// PATCH /:id - Update an alumnus
-router.patch("/:id", async (req: Request, res: Response, next: NextFunction) => {
+// PATCH /:id - Update an alumnus (ADMIN only)
+router.patch("/:id", requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
     if (!id || typeof id !== "string") {
       return res.status(400).json({ success: false, message: "Valid ID is required" });
     }
 
-    const { fullName, email, graduationYear, department, currentCompany, currentPosition, location } = req.body;
+    const { fullName, email, graduationYear, department, currentCompany, currentPosition, location, avatarUrl } =
+      req.body;
 
     const payload: UpdateAlumniInput = {};
 
@@ -300,6 +307,10 @@ router.patch("/:id", async (req: Request, res: Response, next: NextFunction) => 
       payload.location = typeof location === "string" ? location.trim() : null;
     }
 
+    if (avatarUrl !== undefined) {
+      payload.avatarUrl = typeof avatarUrl === "string" && avatarUrl.trim() ? avatarUrl.trim() : null;
+    }
+
     if (Object.keys(payload).length === 0) {
       return res.status(400).json({ success: false, message: "At least one field must be provided for update" });
     }
@@ -319,8 +330,8 @@ router.patch("/:id", async (req: Request, res: Response, next: NextFunction) => 
   }
 });
 
-// DELETE /:id - Delete an alumnus
-router.delete("/:id", async (req: Request, res: Response, next: NextFunction) => {
+// DELETE /:id - Delete an alumnus (ADMIN only)
+router.delete("/:id", requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
     if (!id || typeof id !== "string") {

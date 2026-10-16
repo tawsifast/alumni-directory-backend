@@ -7,16 +7,49 @@ dotenv.config();
 
 const app = express();
 
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  process.env.BETTER_AUTH_URL,
+  "http://localhost:3000",
+].filter(Boolean) as string[];
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    origin: (origin, callback) => {
+      // Allow server-to-server requests, mobile apps, curl, etc.
+      if (!origin) return callback(null, true);
+
+      // Check configured origins
+      if (
+        allowedOrigins.some(
+          (allowed) => origin === allowed || origin === allowed.replace(/\/$/, "")
+        )
+      ) {
+        return callback(null, true);
+      }
+
+      // Allow any Vercel deployment domain (*.vercel.app)
+      if (origin.endsWith(".vercel.app") && origin.startsWith("https://")) {
+        return callback(null, true);
+      }
+
+      // Allow local development ports
+      if (origin.startsWith("http://localhost:") || origin.startsWith("http://127.0.0.1:")) {
+        return callback(null, true);
+      }
+
+      return callback(null, true);
+    },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "Accept"],
   })
 );
 app.use(express.json());
 
+
 // Health check endpoint
-app.get("/health", (_req, res) => {
+app.get(["/health", "/api/health"], (_req, res) => {
   res.status(200).json({
     status: "ok",
     uptime: process.uptime(),

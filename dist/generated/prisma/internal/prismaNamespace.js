@@ -67,7 +67,13 @@ export const JsonNull = runtime.JsonNull;
  */
 export const AnyNull = runtime.AnyNull;
 export const ModelName = {
-    Alumni: 'Alumni'
+    Alumni: 'Alumni',
+    User: 'User',
+    Session: 'Session',
+    Account: 'Account',
+    Verification: 'Verification',
+    SavedAlumni: 'SavedAlumni',
+    Jwks: 'Jwks'
 };
 /**
  * Enums
@@ -88,7 +94,66 @@ export const AlumniScalarFieldEnum = {
     currentPosition: 'currentPosition',
     location: 'location',
     createdAt: 'createdAt',
+    updatedAt: 'updatedAt',
+    avatarUrl: 'avatarUrl'
+};
+export const UserScalarFieldEnum = {
+    id: 'id',
+    name: 'name',
+    email: 'email',
+    emailVerified: 'emailVerified',
+    image: 'image',
+    role: 'role',
+    createdAt: 'createdAt',
     updatedAt: 'updatedAt'
+};
+export const SessionScalarFieldEnum = {
+    id: 'id',
+    expiresAt: 'expiresAt',
+    token: 'token',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt',
+    ipAddress: 'ipAddress',
+    userAgent: 'userAgent',
+    userId: 'userId'
+};
+export const AccountScalarFieldEnum = {
+    id: 'id',
+    accountId: 'accountId',
+    providerId: 'providerId',
+    userId: 'userId',
+    accessToken: 'accessToken',
+    refreshToken: 'refreshToken',
+    idToken: 'idToken',
+    accessTokenExpiresAt: 'accessTokenExpiresAt',
+    refreshTokenExpiresAt: 'refreshTokenExpiresAt',
+    scope: 'scope',
+    password: 'password',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+};
+export const VerificationScalarFieldEnum = {
+    id: 'id',
+    identifier: 'identifier',
+    value: 'value',
+    expiresAt: 'expiresAt',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+};
+export const SavedAlumniScalarFieldEnum = {
+    id: 'id',
+    userId: 'userId',
+    alumniId: 'alumniId',
+    createdAt: 'createdAt'
+};
+export const JwksScalarFieldEnum = {
+    id: 'id',
+    publicKey: 'publicKey',
+    privateKey: 'privateKey',
+    createdAt: 'createdAt',
+    expiresAt: 'expiresAt',
+    alg: 'alg',
+    crv: 'crv'
 };
 export const SortOrder = {
     asc: 'asc',
